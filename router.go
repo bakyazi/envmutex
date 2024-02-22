@@ -1,14 +1,16 @@
 package envmutex
 
 import (
-	"github.com/bakyazi/envmutex/components"
-	"github.com/bakyazi/envmutex/service"
-	"github.com/bakyazi/envmutex/service/sheets"
-	"github.com/labstack/echo/v4"
+	"github.com/bakyazi/envmutex/middleware"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/bakyazi/envmutex/components"
+	"github.com/bakyazi/envmutex/service"
+	"github.com/bakyazi/envmutex/service/sheets"
+	"github.com/labstack/echo/v4"
 )
 
 type Router struct {
@@ -23,6 +25,7 @@ func Init(e *echo.Echo) {
 		log.Fatal(err)
 	}
 
+	e.Use(middleware.NoCache())
 	router := NewRouter(sheetService)
 	e.POST("/login", router.Login)
 	e.POST("/logout", router.Logout)
@@ -61,7 +64,7 @@ func (r *Router) LockEnv(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.Redirect(http.StatusMovedPermanently, "/")
+	return r.Home(c)
 }
 
 func (r *Router) ReleaseEnv(c echo.Context) error {
@@ -75,7 +78,7 @@ func (r *Router) ReleaseEnv(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.Redirect(http.StatusMovedPermanently, "/")
+	return r.Home(c)
 }
 
 func (r *Router) Login(c echo.Context) error {
@@ -103,6 +106,10 @@ func (r *Router) Logout(c echo.Context) error {
 	cookie.Name = "env-user"
 	cookie.Expires = time.Now()
 	c.SetCookie(cookie)
+	c.SetCookie(&http.Cookie{
+		Name:  "Cache-Control",
+		Value: "no-cache",
+	})
 	return c.Redirect(http.StatusMovedPermanently, "/")
 }
 

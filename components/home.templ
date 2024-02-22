@@ -13,15 +13,29 @@ templ Base() {
 			<meta name="google" content="notranslate"/>
 			<link rel="shortcut icon" href="/img/gopher-svgrepo-com.svg" type="image/svg+xml"/>
 			<link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.10/dist/full.min.css" rel="stylesheet" type="text/css"/>
+			<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" integrity="sha512-PgQMlq+nqFLV4ylk1gwUOgm6CtIIXkKwaIHp/PAIWHzig/lKZSEGKEysh0TCVbHJXCLN7WetD8TFecIky75ZfQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 			<script src="https://cdn.tailwindcss.com"></script>
 			<link rel="stylesheet" href="/css/styles.css"/>
 			<title>Environment Mutex by bakyazi</title>
 			<script src="https://unpkg.com/htmx.org@1.9.9" integrity="sha384-QFjmbokDn2DjBjq+fM+8LUIVrAgqcNW2s0PjAxHETgRn9l4fvX31ZxDxvwQnyMOX" crossorigin="anonymous"></script>
 			<script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+			<script>
+			    // Function to show the loader
+                function showLoader() {
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                }
+
+                // Listen for HTMX afterSwap event to hide the loader
+                document.body.addEventListener('htmx:afterSwap', function() {
+                    document.getElementById('loading-screen').classList.add('hidden');
+                });
+			</script>
 		</head>
-		<body class="sample-transition" hx-boost="true">
+		<body class="sample-transition bg-gray-900" hx-boost="true">
             {children...}
+            <!-- loader -->
 		</body>
+
 	</html>
 }
 

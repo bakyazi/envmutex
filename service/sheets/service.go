@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/bakyazi/envmutex/model"
 	"github.com/bakyazi/envmutex/sliceutil"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
-	"time"
 )
 
 type Service struct {
@@ -27,17 +28,18 @@ func NewService(sheetId string, opts ...option.ClientOption) (*Service, error) {
 }
 
 func (s Service) GetEnvironments() ([]model.Environment, error) {
-	resp, err := s.service.Spreadsheets.Values.Get(s.sheetId, "A2:A").Do()
+	resp, err := s.service.Spreadsheets.Values.Get(s.sheetId, "A2:E").Do()
 	if err != nil {
 		return nil, err
 	}
 
 	return sliceutil.Map(resp.Values, func(t []interface{}, i int) model.Environment {
+		date, _ := time.Parse(time.RFC850, t[3].(string))
 		return model.Environment{
 			Name:   t[0].(string),
 			Status: t[1].(string),
 			Owner:  t[2].(string),
-			Date:   t[3].(time.Time),
+			Date:   date,
 		}
 	}), nil
 }
@@ -56,6 +58,7 @@ func (s Service) LockEnvironment(name, owner string) error {
 		}
 		index = i
 		e = env
+		break
 	}
 
 	if index == -1 {
@@ -70,12 +73,12 @@ func (s Service) LockEnvironment(name, owner string) error {
 	e.Owner = owner
 	e.Date = time.Now()
 
-	valRange := fmt.Sprintf("B%d:D%d", index, index)
+	valRange := fmt.Sprintf("B%d:D%d", index+2, index+2)
 	_, err = s.service.Spreadsheets.Values.Update(s.sheetId, valRange,
 		&sheets.ValueRange{
 			Range: valRange,
 			Values: [][]any{
-				{e.Status, e.Owner, e.Date},
+				{e.Status, e.Owner, e.Date.Format(time.RFC850)},
 			},
 		}).Do(googleapi.QueryParameter("valueInputOption", "RAW"))
 	return err
@@ -112,12 +115,12 @@ func (s Service) ReleaseEnvironment(name, owner string) error {
 	e.Owner = ""
 	e.Date = time.Now()
 
-	valRange := fmt.Sprintf("B%d:D%d", index, index)
+	valRange := fmt.Sprintf("B%d:D%d", index+2, index+2)
 	_, err = s.service.Spreadsheets.Values.Update(s.sheetId, valRange,
 		&sheets.ValueRange{
 			Range: valRange,
 			Values: [][]any{
-				{e.Status, e.Owner, e.Date},
+				{e.Status, e.Owner, e.Date.Format(time.RFC850)},
 			},
 		}).Do(googleapi.QueryParameter("valueInputOption", "RAW"))
 	return err
