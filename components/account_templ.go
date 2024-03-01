@@ -36,7 +36,7 @@ func AccountBar(username string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</span></a><div class=\"flex items-center space-x-6 rtl:space-x-reverse\"><a href=\"#\" hx-post=\"/logout\" hx-target=\"body\" class=\"text-sm  text-blue-600 dark:text-blue-500 hover:underline\">Logout</a></div></div></nav>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</span></a><div class=\"flex items-center space-x-6 rtl:space-x-reverse\"><a href=\"#\" hx-get=\"/reset-password\" hx-target=\"body\" class=\"text-sm  text-blue-600 dark:text-blue-500 hover:underline\">Reset Password</a> <a href=\"#\" hx-post=\"/logout\" hx-target=\"body\" class=\"text-sm  text-blue-600 dark:text-blue-500 hover:underline\">Logout</a></div></div></nav>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -27,7 +27,7 @@ func NewService(sheetId string, opts ...option.ClientOption) (*Service, error) {
 
 }
 
-func (s Service) GetEnvironments() ([]model.Environment, error) {
+func (s *Service) GetEnvironments() ([]model.Environment, error) {
 	resp, err := s.service.Spreadsheets.Values.Get(s.sheetId, "A2:E").Do()
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (s Service) GetEnvironments() ([]model.Environment, error) {
 	}), nil
 }
 
-func (s Service) LockEnvironment(name, owner string) error {
+func (s *Service) LockEnvironment(name, owner string) error {
 	envs, err := s.GetEnvironments()
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func (s Service) LockEnvironment(name, owner string) error {
 	return err
 }
 
-func (s Service) ReleaseEnvironment(name, owner string) error {
+func (s *Service) ReleaseEnvironment(name, owner string) error {
 	envs, err := s.GetEnvironments()
 	if err != nil {
 		return err

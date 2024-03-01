@@ -29,11 +29,17 @@ templ Base() {
                 document.body.addEventListener('htmx:afterSwap', function() {
                     document.getElementById('loading-screen').classList.add('hidden');
                 });
+
+                // erases all elements with the id "errors"
+                const clearErrorNodes = () => {
+                    const errorNodes = document.querySelectorAll('#errors');
+                    for (const errorNode of errorNodes) errorNode.innerHTML = "";
+                };
 			</script>
 		</head>
-		<body class="sample-transition bg-gray-900" hx-boost="true">
+		<body class="sample-transition bg-gray-900" hx-boost="true" hx-on::before-request="clearErrorNodes();">
+            <div id="errors"></div>
             {children...}
-            <!-- loader -->
 		</body>
 
 	</html>

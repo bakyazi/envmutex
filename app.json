@@ -3,6 +3,10 @@
     "GOOGLE_SHEET_ID":{
       "description": "Provide your Sheet ID string",
       "required": true
+    },
+    "JWT_PRIV_KEY": {
+      "description": "Provide your JWT Key",
+      "required": true
     }
   }
 }
