@@ -1,6 +1,8 @@
 package service
 
-import "github.com/bakyazi/envmutex/model"
+import (
+	"github.com/bakyazi/envmutex/model"
+)
 
 type Service interface {
 	GetEnvironments() ([]model.Environment, error)

@@ -1,15 +1,14 @@
 package sheets
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"github.com/bakyazi/envmutex/service"
+	apierrors "github.com/bakyazi/envmutex/errors"
 	"github.com/bakyazi/envmutex/sliceutil"
 	"github.com/golang-jwt/jwt"
 	"google.golang.org/api/googleapi"
-	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
+	"net/http"
 	"os"
 	"time"
 )
@@ -19,19 +18,10 @@ type user struct {
 	password string
 }
 
-func NewAuthService(sheetId string, opts ...option.ClientOption) (service.AuthService, error) {
-	srv, err := sheets.NewService(context.Background(), opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &Service{service: srv, sheetId: sheetId}, nil
-
-}
-
 func (s *Service) Authenticate(name, password string) (string, error) {
-	users, err := s.getUsers()
-	if err != nil {
-		return "", err
+	users, apiErr := s.getUsers()
+	if apiErr != nil {
+		return "", apiErr
 	}
 	for _, u := range users {
 		if name != u.name {
@@ -47,21 +37,21 @@ func (s *Service) Authenticate(name, password string) (string, error) {
 
 			tokenStr, err := token.SignedString([]byte(os.Getenv("JWT_PRIV_KEY")))
 			if err != nil {
-				return "", err
+				return "", apierrors.NewAPIError(http.StatusInternalServerError, err)
 			}
 			return tokenStr, nil
 		}
-		return "", errors.New("wrong password")
+		return "", apierrors.NewAPIError(http.StatusBadRequest, errors.New("wrong password"))
 
 	}
 
-	return "", errors.New("not found user")
+	return "", apierrors.NewAPIError(http.StatusNotFound, errors.New("not found user"))
 }
 
 func (s *Service) getUsers() ([]user, error) {
 	resp, err := s.service.Spreadsheets.Values.Get(s.sheetId, "Users!A2:C").Do()
 	if err != nil {
-		return nil, err
+		return nil, apierrors.NewAPIError(http.StatusInternalServerError, err)
 	}
 
 	return sliceutil.Map(resp.Values, func(t []interface{}, i int) user {
@@ -72,27 +62,27 @@ func (s *Service) getUsers() ([]user, error) {
 	}), nil
 }
 
-func (s *Service) ValidateUser(name, passwHash string) error {
-	users, err := s.getUsers()
-	if err != nil {
-		return err
+func (s *Service) ValidateUser(name, password string) error {
+	users, apiErr := s.getUsers()
+	if apiErr != nil {
+		return apiErr
 	}
 
 	for _, u := range users {
 		if u.name == name {
-			if u.password != passwHash {
-				return errors.New("not valid claim")
+			if u.password != password {
+				return apierrors.NewAPIError(http.StatusUnauthorized, errors.New("not valid claim"))
 			}
 			return nil
 		}
 	}
-	return errors.New("not found user")
+	return apierrors.NewAPIError(http.StatusNotFound, errors.New("not found user"))
 }
 
 func (s *Service) ResetPassword(name, old, new string) error {
-	users, err := s.getUsers()
-	if err != nil {
-		return err
+	users, apiErr := s.getUsers()
+	if apiErr != nil {
+		return apiErr
 	}
 	for i, u := range users {
 		if name != u.name {
@@ -100,13 +90,13 @@ func (s *Service) ResetPassword(name, old, new string) error {
 		}
 
 		if u.password != old {
-			return errors.New("wrong old password")
+			return apierrors.NewAPIError(http.StatusBadRequest, errors.New("wrong old password"))
 		}
 
 		u.password = new
 		return s.updatePassword(i+2, u)
 	}
-	return errors.New("user not found")
+	return apierrors.NewAPIError(http.StatusNotFound, errors.New("not found user"))
 }
 
 func (s *Service) updatePassword(index int, u user) error {
@@ -118,5 +108,8 @@ func (s *Service) updatePassword(index int, u user) error {
 				{u.password},
 			},
 		}).Do(googleapi.QueryParameter("valueInputOption", "RAW"))
-	return err
+	if err != nil {
+		return apierrors.NewAPIError(http.StatusInternalServerError, err)
+	}
+	return nil
 }

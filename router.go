@@ -2,7 +2,7 @@ package envmutex
 
 import (
 	"errors"
-	"github.com/bakyazi/envmutex/dto"
+	errors2 "github.com/bakyazi/envmutex/errors"
 	"github.com/bakyazi/envmutex/middleware"
 	"google.golang.org/api/option"
 	"log"
@@ -57,7 +57,7 @@ func (r *Router) Home(c echo.Context) error {
 	user := c.Get("username").(string)
 	envs, err := r.s.GetEnvironments()
 	if err != nil {
-		return ReturnError(c, 400, err)
+		return ReturnError(c, err)
 	}
 	return components.Home(user, envs).Render(c.Request().Context(), c.Response().Writer)
 }
@@ -68,7 +68,7 @@ func (r *Router) LockEnv(c echo.Context) error {
 	env := c.Param("env")
 	err := r.s.LockEnvironment(env, user)
 	if err != nil {
-		return ReturnError(c, 400, err)
+		return ReturnError(c, err)
 	}
 	return r.Home(c)
 }
@@ -78,7 +78,7 @@ func (r *Router) ReleaseEnv(c echo.Context) error {
 	env := c.Param("env")
 	err := r.s.ReleaseEnvironment(env, user)
 	if err != nil {
-		return ReturnError(c, 400, err)
+		return ReturnError(c, err)
 	}
 	return r.Home(c)
 }
@@ -90,12 +90,12 @@ func (r *Router) Login(c echo.Context) error {
 	}
 	params := new(loginParams)
 	if err := c.Bind(params); err != nil {
-		return ReturnError(c, 400, err)
+		return ReturnError(c, err)
 	}
 
 	token, err := r.a.Authenticate(params.Name, params.Password)
 	if err != nil {
-		return ReturnError(c, 400, err)
+		return ReturnError(c, err)
 	}
 
 	c.SetCookie(&http.Cookie{Name: "token", Value: token})
@@ -106,7 +106,7 @@ func (r *Router) Login(c echo.Context) error {
 func (r *Router) Logout(c echo.Context) error {
 	cookie, err := c.Cookie("token")
 	if err != nil || cookie == nil {
-		return ReturnError(c, 400, err)
+		return ReturnError(c, err)
 	}
 	cookie.Name = "token"
 	cookie.Expires = time.Now()
@@ -128,16 +128,16 @@ func (r *Router) ResetPassword(c echo.Context) error {
 	}
 	params := new(resetPasswordParams)
 	if err := c.Bind(params); err != nil {
-		return ReturnError(c, 400, err)
+		return ReturnError(c, err)
 	}
 
 	if params.Password != params.PasswordConfirm {
-		return ReturnError(c, 400, errors.New("password confirmation error"))
+		return ReturnError(c, errors2.NewAPIError(http.StatusBadRequest, errors.New("password confirmation error")))
 	}
 
 	err := r.a.ResetPassword(user, params.OldPassword, params.Password)
 	if err != nil {
-		return ReturnError(c, 400, err)
+		return ReturnError(c, err)
 	}
 	return r.Logout(c)
 }
@@ -146,9 +146,14 @@ func Login(c echo.Context) error {
 	return components.Login().Render(c.Request().Context(), c.Response().Writer)
 }
 
-func ReturnError(c echo.Context, status int, err error) error {
+func ReturnError(c echo.Context, err error) error {
 	c.Response().Header().Add("HX-Retarget", "#errors")
 	c.Response().Header().Add("HX-Reswap", "innerHTML")
 
-	return components.Error(dto.APIError{StatusCode: status, Err: err}).Render(c.Request().Context(), c.Response().Writer)
+	apiErr, ok := err.(*errors2.APIError)
+	if !ok {
+		apiErr = &errors2.APIError{StatusCode: http.StatusInternalServerError, Err: err}
+	}
+
+	return components.Error(apiErr).Render(c.Request().Context(), c.Response().Writer)
 }

@@ -1,23 +1,25 @@
 package components
 
 import (
-    "github.com/bakyazi/envmutex/dto"
+    "github.com/bakyazi/envmutex/errors"
+    "net/http"
+    "fmt"
 )
 
-templ Error(apiErr dto.APIError) {
+templ Error(apiErr *errors.APIError) {
   if apiErr.StatusCode < 500 {
-    @Error4xx(apiErr.Err){}
+    @Error4xx(apiErr){}
   } else {
-    @Error5xx(){}
+    @Error5xx(apiErr){}
   }
 }
 
-templ Error4xx(err error) {
+templ Error4xx(err *errors.APIError) {
   <div class="bg-red-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">
     <strong class="font-bold">
-        <h2>Client Error</h2>
+        <h2>{fmt.Sprintf("%d %s",err.StatusCode, http.StatusText(err.StatusCode))}</h2>
     </strong>
-    <span class="block sm:inline">{err.Error()}</span>
+    <span class="block sm:inline">{err.Err.Error()}</span>
     <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
       <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
     </span>
@@ -25,12 +27,12 @@ templ Error4xx(err error) {
 }
 
 
-templ Error5xx() {
+templ Error5xx(err *errors.APIError) {
   <div class="bg-red-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">
     <strong class="font-bold">
-        <h2>Internal Error</h2>
+        <h2>{fmt.Sprintf("%d %s",err.StatusCode, http.StatusText(err.StatusCode))}</h2>
     </strong>
-    <span class="block sm:inline">Internal error occurred please contact with administrator</span>
+    <span class="block sm:inline">Internal error occurred please contact with administrator. {err.Err.Error()}</span>
     <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
       <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
     </span>

@@ -20,24 +20,24 @@ templ Base() {
 			<script src="https://unpkg.com/htmx.org@1.9.9" integrity="sha384-QFjmbokDn2DjBjq+fM+8LUIVrAgqcNW2s0PjAxHETgRn9l4fvX31ZxDxvwQnyMOX" crossorigin="anonymous"></script>
 			<script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
 			<script>
-			    // Function to show the loader
-                function showLoader() {
-                    document.getElementById('loading-screen').classList.remove('hidden');
-                }
-
-                // Listen for HTMX afterSwap event to hide the loader
-                document.body.addEventListener('htmx:afterSwap', function() {
+                const clearLoader = () => {
                     document.getElementById('loading-screen').classList.add('hidden');
-                });
+                }
 
                 // erases all elements with the id "errors"
                 const clearErrorNodes = () => {
+                    document.getElementById('loading-screen').classList.remove('hidden');
                     const errorNodes = document.querySelectorAll('#errors');
                     for (const errorNode of errorNodes) errorNode.innerHTML = "";
                 };
 			</script>
 		</head>
-		<body class="sample-transition bg-gray-900" hx-boost="true" hx-on::before-request="clearErrorNodes();">
+		<body class="sample-transition bg-gray-900" hx-boost="true" hx-on::before-request="clearErrorNodes();" hx-on::after-request="clearLoader();">
+            <div id="loading-screen" class="hidden w-full h-full absolute block top-0 left-0 bg-white opacity-75 z-50">
+              <span class="text-blue-500 opacity-75 top-1/2 my-0 mx-auto block relative w-0 h-0">
+                <i class="fas fa-circle-notch fa-spin fa-5x"></i>
+              </span>
+            </div>
             <div id="errors"></div>
             {children...}
 		</body>

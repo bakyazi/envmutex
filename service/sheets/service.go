@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
+	apierrors "github.com/bakyazi/envmutex/errors"
 	"github.com/bakyazi/envmutex/model"
 	"github.com/bakyazi/envmutex/sliceutil"
 	"google.golang.org/api/googleapi"
@@ -21,7 +23,7 @@ type Service struct {
 func NewService(sheetId string, opts ...option.ClientOption) (*Service, error) {
 	service, err := sheets.NewService(context.Background(), opts...)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.NewAPIError(http.StatusInternalServerError, err)
 	}
 	return &Service{service: service, sheetId: sheetId}, nil
 
@@ -30,7 +32,7 @@ func NewService(sheetId string, opts ...option.ClientOption) (*Service, error) {
 func (s *Service) GetEnvironments() ([]model.Environment, error) {
 	resp, err := s.service.Spreadsheets.Values.Get(s.sheetId, "A2:E").Do()
 	if err != nil {
-		return nil, err
+		return nil, apierrors.NewAPIError(http.StatusInternalServerError, err)
 	}
 
 	return sliceutil.Map(resp.Values, func(t []interface{}, i int) model.Environment {
@@ -45,9 +47,9 @@ func (s *Service) GetEnvironments() ([]model.Environment, error) {
 }
 
 func (s *Service) LockEnvironment(name, owner string) error {
-	envs, err := s.GetEnvironments()
-	if err != nil {
-		return err
+	envs, apiErr := s.GetEnvironments()
+	if apiErr != nil {
+		return apiErr
 	}
 
 	var index = -1
@@ -62,11 +64,11 @@ func (s *Service) LockEnvironment(name, owner string) error {
 	}
 
 	if index == -1 {
-		return errors.New("not found environment")
+		return apierrors.NewAPIError(http.StatusNotFound, errors.New("environment not found"))
 	}
 
 	if e.Status != "Free" {
-		return errors.New("environment already locked")
+		return apierrors.NewAPIError(http.StatusLocked, errors.New("environment already locked"))
 	}
 
 	e.Status = "Locked"
@@ -74,20 +76,23 @@ func (s *Service) LockEnvironment(name, owner string) error {
 	e.Date = time.Now()
 
 	valRange := fmt.Sprintf("B%d:D%d", index+2, index+2)
-	_, err = s.service.Spreadsheets.Values.Update(s.sheetId, valRange,
+	_, err := s.service.Spreadsheets.Values.Update(s.sheetId, valRange,
 		&sheets.ValueRange{
 			Range: valRange,
 			Values: [][]any{
 				{e.Status, e.Owner, e.Date.Format(time.RFC850)},
 			},
 		}).Do(googleapi.QueryParameter("valueInputOption", "RAW"))
-	return err
+	if err != nil {
+		return apierrors.NewAPIError(http.StatusInternalServerError, err)
+	}
+	return nil
 }
 
 func (s *Service) ReleaseEnvironment(name, owner string) error {
-	envs, err := s.GetEnvironments()
-	if err != nil {
-		return err
+	envs, apiErr := s.GetEnvironments()
+	if apiErr != nil {
+		return apiErr
 	}
 
 	var index = -1
@@ -101,27 +106,30 @@ func (s *Service) ReleaseEnvironment(name, owner string) error {
 	}
 
 	if index == -1 {
-		return errors.New("not found environment")
+		return apierrors.NewAPIError(http.StatusNotFound, errors.New("environment not found"))
 	}
 
 	if e.Status != "Locked" {
-		return errors.New("environment already released")
+		return apierrors.NewAPIError(http.StatusLocked, errors.New("environment already locked"))
 	}
 
 	if e.Owner != owner {
-		return errors.New("not owned by user")
+		return apierrors.NewAPIError(http.StatusForbidden, errors.New("not owned by user"))
 	}
 	e.Status = "Free"
 	e.Owner = ""
 	e.Date = time.Now()
 
 	valRange := fmt.Sprintf("B%d:D%d", index+2, index+2)
-	_, err = s.service.Spreadsheets.Values.Update(s.sheetId, valRange,
+	_, err := s.service.Spreadsheets.Values.Update(s.sheetId, valRange,
 		&sheets.ValueRange{
 			Range: valRange,
 			Values: [][]any{
 				{e.Status, e.Owner, e.Date.Format(time.RFC850)},
 			},
 		}).Do(googleapi.QueryParameter("valueInputOption", "RAW"))
-	return err
+	if err != nil {
+		return apierrors.NewAPIError(http.StatusInternalServerError, err)
+	}
+	return nil
 }
