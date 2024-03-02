@@ -2,6 +2,7 @@ package envmutex
 
 import (
 	"errors"
+	"github.com/bakyazi/envmutex/dto"
 	"github.com/bakyazi/envmutex/middleware"
 	"google.golang.org/api/option"
 	"log"
@@ -148,5 +149,6 @@ func Login(c echo.Context) error {
 func ReturnError(c echo.Context, status int, err error) error {
 	c.Response().Header().Add("HX-Retarget", "#errors")
 	c.Response().Header().Add("HX-Reswap", "innerHTML")
-	return components.Error(status, err).Render(c.Request().Context(), c.Response().Writer)
+
+	return components.Error(dto.APIError{StatusCode: status, Err: err}).Render(c.Request().Context(), c.Response().Writer)
 }
