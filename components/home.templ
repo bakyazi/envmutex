@@ -49,7 +49,7 @@ templ Base() {
 templ Home(username string,envs []model.Environment) {
     @Base() {
                 <div>
-                    @AccountBar(username)
+                    @Header(username)
                     @EnvList() {
                         for _, env := range envs {
                             @Env(env)

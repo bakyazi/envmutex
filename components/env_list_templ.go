@@ -23,7 +23,7 @@ func EnvList() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"flex flex-col items-center px-6 py-8 mx-auto md:h-screen max-w-4xl lg:py-0\"><table class=\"relative w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400\"><thead class=\"text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400\"><tr><th scope=\"col\" class=\"px-6 py-3\">Name</th><th scope=\"col\" class=\"px-6 py-3\">Status</th><th scope=\"col\" class=\"px-6 py-3\">Date</th><th scope=\"col\" class=\"px-6 py-3\">Owner</th><th scope=\"col\" class=\"px-6 py-3\">Actions</th></tr></thead> <tbody>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"relative overflow-x-auto\"><table class=\"m-auto w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 max-w-screen-lg	\"><thead class=\"text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400\"><tr><th scope=\"col\" class=\"px-6 py-3\">Name</th><th scope=\"col\" class=\"px-6 py-3\">Status</th><th scope=\"col\" class=\"px-6 py-3 min-w-44\">Date</th><th scope=\"col\" class=\"px-6 py-3\">Owner</th><th scope=\"col\" class=\"px-6 py-3\">Actions</th></tr></thead> <tbody>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
